@@ -84,8 +84,7 @@ class Socket extends EventEmitter {
             const port = _.get(sock, 'roomInfo.port')*1;
             const base = _.get(sock, 'enter');
 
-
-            const buffer = [];
+            let buffer = [];
             const socket = this.native = new Net.Socket();
             socket.connect(port, host, () => this.emit('connect'));
             socket.on('error', (e) => this.emit('error', e));
@@ -98,7 +97,7 @@ class Socket extends EventEmitter {
             	const last = _.last(_.split(block, '\n'));
             	if(last !== '') return;
 
-            	const messages = _.join(buffer); _.drop(buffer, buffer.length);
+            	const messages = _.join(buffer); buffer = [];
             	_.each(_.split(messages, '\n'), (data) => {
                     const eventName = this.getEventPacketName(data);
                     const eventData = this.getEventPAcketData(data);
