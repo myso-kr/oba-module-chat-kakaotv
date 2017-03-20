@@ -88,10 +88,7 @@ class Socket extends EventEmitter {
             const socket = this.native = new Net.Socket();
             socket.connect(port, host, () => this.emit('connect'));
             socket.on('error', (e) => this.emit('error', e));
-            socket.on('close', () => {
-            	this.native = null;
-            	this.emit('close');
-            });
+            socket.on('close', () => this.emit('close'));
             socket.on('data', (data) => {
             	const block = data.toString(); buffer.push(block);
             	const last = _.last(_.split(block, '\n'));
@@ -108,7 +105,10 @@ class Socket extends EventEmitter {
             
 	        this.on('connect', () => this.module.emit('connect'));
             this.on('error', (e) => this.module.emit('error', e));
-            this.on('close', () => this.module.emit('close'));
+            this.on('close', () => {
+                this.native = null;
+                this.module.emit('close')
+            });
 	        this.on('message', (segments) => {
 	        	this.module.emit('message', {
                     module: this.module.defaults,
@@ -118,7 +118,16 @@ class Socket extends EventEmitter {
                     timestamp: Date.now()
                 });
 	        });
-		});
+		})
+        .catch((e)=>{
+            if(this.native && this.native.destroy) {
+                this.native.destroy();
+            } else {
+                this.native = null;
+                this.module.emit('error', e);
+                this.module.emit('close');
+            }
+        });
 	}
 	disconnect() {
 		if(!this.native) return;
